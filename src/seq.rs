@@ -2,10 +2,10 @@
 
 use std::{hint::black_box, time::Duration};
 
-use crate::bench::measure;
+use crate::{bench::measure, perf::Group};
 
 /// Sums a `size_mib` array of `u32` front to back and prints time per element and bandwidth.
-pub fn run(size_mib: usize, warmup: usize, reps: usize) {
+pub fn run(group: &Group, size_mib: usize, warmup: usize, reps: usize) -> Result<(), String> {
     let n = size_mib * 1024 * 1024 / std::mem::size_of::<u32>();
     // Non-zero values, so every page is really written and backed by its own memory.
     let data = (0..n as u32).collect::<Vec<u32>>();
@@ -17,7 +17,7 @@ pub fn run(size_mib: usize, warmup: usize, reps: usize) {
         d.iter().map(|x| *x as u64).sum::<u64>()
     };
 
-    let s = measure(warmup, reps, kernel);
+    let s = measure(warmup, reps, group, kernel)?;
 
     let row = |label: &str, t: Duration| {
         let secs = t.as_secs_f64();
@@ -40,4 +40,25 @@ pub fn run(size_mib: usize, warmup: usize, reps: usize) {
         "  spread {:.1}% of median",
         (s.max - s.min).as_secs_f64() / s.median.as_secs_f64() * 100.0,
     );
+
+    // Counter medians per rep, plus the same value divided by the element count.
+    println!("  {:<14} {:>14} {:>10}", "counter", "total", "per elem");
+    for (name, &v) in group.names.iter().zip(&s.counters) {
+        println!("  {name:<14} {v:>14} {:>10.4}", v as f64 / n as f64);
+    }
+
+    let get = |name: &str| {
+        group
+            .names
+            .iter()
+            .position(|x| x == name)
+            .map(|i| s.counters[i])
+    };
+    if let (Some(ins), Some(cyc)) = (get("instructions"), get("cycles"))
+        && cyc > 0
+    {
+        println!("  IPC {:.2}", ins as f64 / cyc as f64);
+    }
+
+    Ok(())
 }
