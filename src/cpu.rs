@@ -61,6 +61,36 @@ pub fn pin(cpu: usize) -> Result<(), String> {
     Ok(())
 }
 
+/// Returns the perf PMU type id (`cpu_core` or `cpu_atom`) for the core type `cpu` belongs to.
+pub fn pmu_type(cpu: usize) -> Result<u32, String> {
+    let cpu_type = |path: &str| -> Result<u32, String> {
+        read_to_string(path)
+            .map_err(|e| format!("Error reading CPU type: {e}"))?
+            .trim()
+            .parse::<u32>()
+            .map_err(|e| format!("Parsing Error: {e}"))
+    };
+
+    let perf_cpu = parse_cpu_list(
+        &read_to_string("/sys/devices/cpu_core/cpus")
+            .map_err(|e| format!("Error reading cpu list content: {e}"))?,
+    )
+    .map_err(|e| format!("Error parsing cpu list {e}"))?;
+    let eff_cpu = parse_cpu_list(
+        &read_to_string("/sys/devices/cpu_atom/cpus")
+            .map_err(|e| format!("Error reading cpu list content: {e}"))?,
+    )
+    .map_err(|e| format!("Error parsing cpu list {e}"))?;
+
+    if perf_cpu.contains(&cpu) {
+        Ok(cpu_type("/sys/devices/cpu_core/type")?)
+    } else if eff_cpu.contains(&cpu) {
+        Ok(cpu_type("/sys/devices/cpu_atom/type")?)
+    } else {
+        Err("undefined CPU type detected".to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
