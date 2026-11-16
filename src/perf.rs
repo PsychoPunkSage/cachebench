@@ -188,6 +188,7 @@ pub struct Group {
     /// First counter opened; every group operation goes through it.
     pub leader: OwnedFd,
     /// Never read directly; kept so the member fds stay open and remain in the group.
+    #[allow(dead_code)]
     pub members: Vec<OwnedFd>,
     /// Names of the counters actually opened, in the order `read_counters` returns them.
     pub names: Vec<String>,
