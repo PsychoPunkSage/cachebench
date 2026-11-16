@@ -13,6 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cpu = cpu::resolve(&cli.core)?;
     cpu::pin(cpu)?;
     let pmu = cpu::pmu_type(cpu)?;
+    let group = perf::Group::new(pmu, perf::EVENTS)?;
     // SAFETY: `sched_getcpu` takes no arguments and has no preconditions.
     eprintln!(
         "pinned to cpu {} (running on {}), pmu type {}",
@@ -22,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     match cli.cmd {
-        Cmd::Seq { size_mib } => seq::run(size_mib, cli.warmup, cli.reps),
+        Cmd::Seq { size_mib } => seq::run(&group, size_mib, cli.warmup, cli.reps)?,
     }
 
     Ok(())
