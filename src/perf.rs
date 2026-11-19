@@ -17,7 +17,6 @@ pub const PERF_FLAG_FD_CLOEXEC: u64 = 1 << 3;
 /// Generic hardware event id: CPU cycles.
 pub const PERF_COUNT_HW_CPU_CYCLES: u64 = 0;
 
-/// ioctl "buttons" for a perf counter: _IO('$', n) = (0x24 << 8) | n
 /// Counter ioctl commands; `_IO('$', n)` expands to `(0x24 << 8) | n`.
 /// Start counting.
 pub const PERF_EVENT_IOC_ENABLE: u64 = 0x2400;
@@ -26,18 +25,23 @@ pub const PERF_EVENT_IOC_DISABLE: u64 = 0x2401;
 /// Set the count to zero.
 pub const PERF_EVENT_IOC_RESET: u64 = 0x2403;
 
-/// Set r#type for cache event (Lid/LLC misses)
+/// `PerfEventAttr::type` for generic cache events (cache, op and result packed into `config`).
 pub const PERF_TYPE_HW_CACHE: u32 = 3;
-/// eventID: count instructions
+/// Generic hardware event id: retired instructions.
 pub const PERF_COUNT_HW_INSTRUCTIONS: u64 = 1;
-/// eventID: count mispredicted branches
+/// Generic hardware event id: mispredicted branches.
 pub const PERF_COUNT_HW_BRANCH_MISSES: u64 = 5;
+/// Generic hardware event id: last-level cache misses. Used instead of the
+/// `HW_CACHE` LL read-miss event, which reads 0 on the `cpu_core` PMU here.
+pub const PERF_COUNT_HW_CACHE_MISSES: u64 = 3;
 
+/// Cache event fields for `hw_cache`: L1 data cache, read op, miss result.
 pub const PERF_COUNT_HW_CACHE_L1D: u64 = 0;
-pub const PERF_COUNT_HW_CACHE_LL: u64 = 2;
 pub const PERF_COUNT_HW_CACHE_OP_READ: u64 = 0;
 pub const PERF_COUNT_HW_CACHE_RESULT_MISS: u64 = 1;
+/// `read_format` flag: one read returns every counter in the group.
 pub const PERF_FORMAT_GROUP: u64 = 1 << 3;
+/// ioctl argument: apply the command to the whole group, not just the leader.
 pub const PERF_IOC_FLAG_GROUP: usize = 1 << 0;
 
 #[repr(C)]
@@ -166,15 +170,8 @@ pub const EVENTS: &[Event] = &[
     },
     Event {
         name: "llc-misses",
-        type_: PERF_TYPE_HW_CACHE,
-        config: |pmu| {
-            hw_cache(
-                pmu,
-                PERF_COUNT_HW_CACHE_LL,
-                PERF_COUNT_HW_CACHE_OP_READ,
-                PERF_COUNT_HW_CACHE_RESULT_MISS,
-            )
-        },
+        type_: PERF_TYPE_HARDWARE,
+        config: |pmu| hw(pmu, PERF_COUNT_HW_CACHE_MISSES),
     },
     Event {
         name: "branch-misses",
