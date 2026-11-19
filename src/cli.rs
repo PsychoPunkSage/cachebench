@@ -63,4 +63,14 @@ pub enum Cmd {
         #[arg(long, default_value_t = 64)]
         size_mib: usize,
     },
+    Stride {
+        /// Array size in MiB.
+        #[arg(long, default_value_t = 64)]
+        size_mib: usize,
+    },
+    Pattern {
+        /// Array size in MiB.
+        #[arg(long, default_value_t = 64)]
+        size_mib: usize,
+    },
 }

@@ -1,8 +1,10 @@
 mod bench;
 mod cli;
 mod cpu;
+mod pattern;
 mod perf;
 mod seq;
+mod stride;
 
 use clap::Parser;
 
@@ -24,6 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.cmd {
         Cmd::Seq { size_mib } => seq::run(&group, size_mib, cli.warmup, cli.reps)?,
+        Cmd::Stride { size_mib } => stride::run(&group, size_mib, cli.warmup, cli.reps)?,
+        Cmd::Pattern { size_mib } => pattern::run(&group, size_mib, cli.warmup, cli.reps)?,
     }
 
     Ok(())
